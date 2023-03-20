@@ -1,0 +1,16 @@
+/platforms
+/hooks
+/node_modules
+/lib
+/debugger
+/dist
+
+/app/**/*.map
+# shouldn't ignore this for vanilla nativescript
+# /app/**/*.js
+
+.DS_Store
+**/*.log
+tags
+
+ers.txt

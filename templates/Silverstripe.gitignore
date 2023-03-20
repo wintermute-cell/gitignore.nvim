@@ -1,0 +1,9 @@
+assets/_combinedfiles/
+assets/_resampled/
+assets/Uploads/
+silverstripe-cache/
+.env
+vendor/
+resources/
+themes/simple/
+public/resources/

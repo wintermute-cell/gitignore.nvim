@@ -1,0 +1,7 @@
+rescue-backup/
+
+*.tsv
+bom/
+
+# Gerber export output
+out/
