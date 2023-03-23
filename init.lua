@@ -1,32 +1,24 @@
 local has_telescope, _ = pcall(require, "telescope")
 if not has_telescope then
-  error(
-    "This plugin requires telescope.nvim (https://github.com/nvim-telescope/telescope.nvim)"
-  )
+    error(
+        "This plugin requires telescope.nvim (https://github.com/nvim-telescope/telescope.nvim)"
+    )
 end
 
 local M = {}
 
-local paths = vim.split(vim.fn.glob('templates/*'), '\n')
-
-local function filter_for_ending(input_list, ending)
-  local output = {}
-  local idx = 0
-  for _, value in ipairs(input_list) do
-    -- if the value ends with '.stack', add it to stacks
-    if string.sub(value, -#ending) == ending then
-      idx = idx + 1
-      output[idx] = value
-    end
-  end
-  return output
-end
-
-local stacks = filter_for_ending(paths, '.stack')
-local ignores = filter_for_ending(paths, '.gitignore')
-local patches = filter_for_ending(paths, '.patch')
+-- GENERIC HELPER FUNCTIONS
+local function map(tbl, f) local t = {} for i,v in ipairs(tbl) do t[i] = f(v) end return t end
+local function isIn(tbl, val) for _, value in ipairs(tbl) do if val == value then return true end end return false end
+local function removeDuplicates(tbl, ignored) ignored = ignored or {} local hash = {} local t = {} for _,v in ipairs(tbl) do if (not hash[v]) then t[#t+1] = v if not isIn(ignored, v) then hash[v] = true end end end return t end
+local function filter(tbl, f) local t = {} local i = 1 for _, v in ipairs(tbl) do if f(v) then t[i] = v i = i + 1 end end return t end
+local function invertTable(tbl) local t = {} for k, v in pairs(tbl) do t[v] = k end return t end
+local function endsWith(str, ending) return string.sub(str, -#ending) == ending end
+local function readAll(filePath) local f = assert(io.open(filePath, "r")) local content = f:read("*all") f:close() return content end
+local function collapseEmptyStrings(tbl) local t = {} local lastValWasEmpty = false for _, value in ipairs(tbl) do if not lastValWasEmpty then table.insert(t, value) end if value == '' then lastValWasEmpty = true else lastValWasEmpty = false end end return t end
 
 
+-- TELESCOPE STUFF
 local themes = require("telescope.themes")
 local actions = require("telescope.actions")
 local state = require("telescope.actions.state")
@@ -34,125 +26,148 @@ local pickers = require("telescope.pickers")
 local finders = require("telescope.finders")
 local conf = require("telescope.config").values
 
-local function readAll(file)
-    local f = assert(io.open(file, "r"))
-    local content = f:read("*all")
-    f:close()
-    return content
-end
+-- DEFINITIONS
+local DEFAULT_TITLE = 'Creating .gitignore: Make your choice(s)'
+local ORDER_FILEPATH = 'order'
+local TEMPLATE_PATH = 'templates'
 
-local only_files = {}
--- for evey entry in paths, remote the 'templates/' prefix
-for i, v in ipairs(paths) do
-  only_files[i] = string.sub(v, 11)
-end
+-- THE REST OF THE PLUGIN
+local paths = vim.split(vim.fn.glob(TEMPLATE_PATH .. '/*'), '\n')
+local prefixes = removeDuplicates(map(
+    map(
+        paths,
+        function (path) return path:sub(11) end),
+    function (path) return path:sub(1, path:find('%.')-1) end
+))
 
-local prefix_map = {}
-
-for _, v in ipairs(only_files) do
-  local dot_idx = string.find(v, '%.')
-  if dot_idx ~= nil then
-    prefix_map[string.sub(v, 1, dot_idx - 1)] = true
-  else
-    prefix_map[v] = true
-  end
-end
-
-local idx = 0 local prefix_list = {}
-for key, _ in pairs(prefix_map) do
-  idx = idx+1
-  prefix_list[idx] = key
-end
-
-local function get_matching_paths(prefix)
-  local matches = {}
-  for _, path in ipairs(stacks) do
-    local filename = string.sub(path, 11)
-    if string.sub(filename, 1, #prefix) == prefix then
-      local dot_idx = string.find(filename, '%.')
-      local stack_identifier = string.sub(filename, dot_idx+1, #filename - 6)
-      matches[#matches+1] = 'templates/' .. stack_identifier .. '.gitignore'
-    end
-  end
-  for _, path in ipairs(ignores) do
-    local filename = string.sub(path, 11)
-    if string.sub(filename, 1, #prefix) == prefix then
-      matches[#matches+1] = path
-    end
-  end
-  for _, path in ipairs(patches) do
-    local filename = string.sub(path, 11)
-    if string.sub(filename, 1, #prefix) == prefix then
-      matches[#matches+1] = path
-    end
-  end
-
-  -- remove the duplicates from matches
-  local unique_matches = {}
-  for _, v in ipairs(matches) do
-    unique_matches[v] = true
-  end
-  matches = {}
-  idx = 0
-  for key, _ in pairs(unique_matches) do
-    idx = idx + 1
-    matches[idx] = key
-  end
-  return matches
-end
-
-function M.select(on_choice, opts)
-  opts = opts or {}
-  local defaults = {
-    prompt_title = 'Creating .gitignore: Make your choice(s)',
-    previewer = false,
-    finder = finders.new_table({
-      results = prefix_list,
-    }),
-    sorter = conf.generic_sorter(opts),
-    attach_mappings = function(prompt_bufnr)
-      actions.select_default:replace(function()
-        local selection = state.get_selected_entry()
-        -- Replace on_choice with a no-op so closing doesn't trigger it
-        on_choice = function(_, _) end
-        if not selection then
-          -- User did not select anything.
-          vim.schedule(function () print('none') end)
-          return
+local function getPathsForPrefix(prefix)
+    local matches = {}
+    local stacks = filter(paths, function (path) return endsWith(path, '.stack') end)
+    local ignores = filter(paths, function (path) return endsWith(path, '.gitignore') end)
+    local patches = filter(paths, function (path) return endsWith(path, '.patch') end)
+    for _, path in ipairs(stacks) do
+        local filename = string.lower(string.sub(path, 11))
+        if string.sub(filename, 1, #prefix) == prefix then
+            matches[#matches+1] = path
         end
-        local picker = state.get_current_picker(prompt_bufnr)
-        local sel = picker:get_multi_selection()
-        local full_string = ''
-        for _, v in pairs(sel) do
-          local selection_value = v[1]
-          local stack_files = get_matching_paths(selection_value)
-          -- read file from path to string
-          for _, file_path in ipairs(stack_files) do
-            local contents = readAll(file_path)
-            full_string = full_string .. contents
-          end
+    end
+    for _, path in ipairs(ignores) do
+        local filename = string.lower(string.sub(path, 11))
+        if string.sub(filename, 1, #prefix) == prefix then
+            matches[#matches+1] = path
         end
-        local new_buf = vim.api.nvim_create_buf(true, false)
-        vim.api.nvim_buf_set_lines(new_buf, 0, -1, true, vim.split(full_string, '\n'))
-        vim.api.nvim_buf_set_option(new_buf, 'filetype', 'gitignore')
-        vim.api.nvim_buf_set_name(new_buf, '.gitignore')
-        actions.close(prompt_bufnr)
-        vim.api.nvim_win_set_buf(0, new_buf)
-      end)
+    end
+    for _, path in ipairs(patches) do
+        local filename = string.lower(string.sub(path, 11))
+        if string.sub(filename, 1, #prefix) == prefix then
+            matches[#matches+1] = path
+        end
+    end
+    return matches
+end
 
-      actions.close:enhance({
-        post = function()
-          vim.schedule(function () print('Creation of .gitignore cancelled!') end)
-          on_choice(nil)
+
+local function createGitignore(selectionList, order)
+    local s = map(selectionList, string.lower)
+    s = removeDuplicates(s)
+    table.sort(s)
+    table.sort(s, function (left, right)
+        return (order[left] or 0) < (order[right] or 0)
+    end)
+    local ignoreLines = {}
+    for _, prefix in ipairs(s) do
+        local p = getPathsForPrefix(prefix)
+        for _, path in ipairs(p) do
+            local fileLines = vim.split(readAll(path):gsub('\r\n', '\n'), '\n')
+            for _, line in ipairs(fileLines) do
+                table.insert(ignoreLines, line)
+            end
+            table.insert(ignoreLines, '')
+        end
+    end
+    ignoreLines = removeDuplicates(ignoreLines, {''})
+    ignoreLines = collapseEmptyStrings(ignoreLines)
+    return ignoreLines
+end
+
+function M.select(on_choice, sorter_opts)
+    sorter_opts = sorter_opts or {}
+    local order_data = vim.split(readAll(ORDER_FILEPATH), '\n')
+    order_data = invertTable(filter(order_data, function (line) return not line:sub(1, 1) == '#' end))
+    local defaults = {
+        prompt_title = DEFAULT_TITLE,
+        previewer = false,
+        finder = finders.new_table({
+            results = prefixes,
+        }),
+        sorter = conf.generic_sorter(sorter_opts),
+        attach_mappings = function(prompt_bufnr)
+            actions.select_default:replace(function()
+                local selection = state.get_selected_entry()
+                -- Replace on_choice with a no-op so closing doesn't trigger it
+                on_choice = function(_, _) end
+                if not selection then
+                    -- User did not select anything.
+                    vim.schedule(function () print('none') end)
+                    return
+                end
+                local picker = state.get_current_picker(prompt_bufnr)
+                local multiSelection = picker:get_multi_selection()
+                multiSelection = map(multiSelection, function (item) return item[1] end)
+
+                -- in case of no multi selection, accept a single selection with <CR>
+                if #multiSelection <= 0 then
+                    multiSelection = {state.get_selected_entry()[1]}
+                end
+                local ignoreLines = createGitignore(multiSelection, order_data)
+                if #ignoreLines > 0 then
+                    local new_buf = vim.api.nvim_create_buf(true, false)
+                    vim.api.nvim_buf_set_lines(new_buf, 0, -1, true, ignoreLines)
+                    vim.api.nvim_buf_set_option(new_buf, 'filetype', 'gitignore')
+                    vim.api.nvim_buf_set_name(new_buf, '.gitignore')
+                    actions.close(prompt_bufnr)
+                    vim.api.nvim_win_set_buf(0, new_buf)
+                else
+                    actions.close(prompt_bufnr)
+                    vim.schedule(function () print('Nothing selected, creation of .gitignore cancelled!') end)
+                end
+            end)
+
+            actions.toggle_selection:enhance({
+                post = function ()
+                    -- clearing the input after user makes a multi selection
+                    vim.cmd [[norm! 0v$d]]
+                    local picker = state.get_current_picker(prompt_bufnr)
+                    local multiSelection = picker:get_multi_selection()
+                    multiSelection = map(multiSelection, function (item) return item[1] end)
+                    if #multiSelection == 0 then
+                        picker.prompt_border:change_title(DEFAULT_TITLE)
+                        return
+                    end
+                    local selectionString = ''
+                    for i, value in ipairs(multiSelection) do
+                        selectionString = selectionString .. value
+                        if i ~= #multiSelection then
+                            selectionString = selectionString .. ', '
+                        end
+                    end
+                    picker.prompt_border:change_title(selectionString)
+                end,
+            })
+
+            actions.close:enhance({
+                post = function ()
+                    --vim.schedule(function () print('Creation of .gitignore cancelled!') end)
+                    --on_choice(nil)
+                end,
+            })
+
+            return true
         end,
-      })
-
-      return true
-    end,
-  }
-  return pickers.new(themes.get_dropdown(), defaults):find()
+    }
+    return pickers.new(themes.get_dropdown(), defaults):find()
 end
 
-M.select(print)
+vim.api.nvim_create_user_command('Gitignore', M.select, {})
 
 return M
