@@ -30,7 +30,7 @@ call dein#add("wintermute-cell/gitignore.nvim")
 Using [packer.nvim](https://github.com/wbthomason/packer.nvim):
 ```lua
 use {
-  "potamides/pantran.nvim"
+  "wintermute-cell/gitignore.nvim"
 }
 ```
 
