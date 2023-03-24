@@ -29,10 +29,13 @@ local conf = require("telescope.config").values
 -- DEFINITIONS
 local DEFAULT_TITLE = 'Creating .gitignore: Make your choice(s)'
 local ORDER_FILEPATH = 'order'
-local TEMPLATE_PATH = 'templates'
+local TEMPLATE_PATH = 'plugin/templates'
 
 -- THE REST OF THE PLUGIN
 local paths = vim.split(vim.fn.glob(TEMPLATE_PATH .. '/*'), '\n')
+vim.schedule(function ()
+    print(vim.inspect(vim.fn.stdpath('data')))
+end)
 local prefixes = removeDuplicates(map(
     map(
         paths,
@@ -90,7 +93,7 @@ local function createGitignore(selectionList, order)
     return ignoreLines
 end
 
-function M.select(on_choice, sorter_opts)
+function M.generate(on_choice, sorter_opts)
     sorter_opts = sorter_opts or {}
     local order_data = vim.split(readAll(ORDER_FILEPATH), '\n')
     order_data = invertTable(filter(order_data, function (line) return not line:sub(1, 1) == '#' end))
@@ -168,6 +171,6 @@ function M.select(on_choice, sorter_opts)
     return pickers.new(themes.get_dropdown(), defaults):find()
 end
 
-vim.api.nvim_create_user_command('Gitignore', M.select, {})
+vim.api.nvim_create_user_command('Gitignore', M.generate, {})
 
 return M
