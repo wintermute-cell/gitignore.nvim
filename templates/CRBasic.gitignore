@@ -1,5 +1,0 @@
-# optional table definintions created at compile time
-*.tdf
-
-# any encrypted files
-*_Enc.*

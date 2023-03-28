@@ -16,6 +16,7 @@ local function invertTable(tbl) local t = {} for k, v in pairs(tbl) do t[v] = k 
 local function endsWith(str, ending) return string.sub(str, -#ending) == ending end
 local function readAll(filePath) local f = assert(io.open(filePath, "r")) local content = f:read("*all") f:close() return content end
 local function collapseEmptyStrings(tbl) local t = {} local lastValWasEmpty = false for _, value in ipairs(tbl) do if not lastValWasEmpty then table.insert(t, value) end if value == '' then lastValWasEmpty = true else lastValWasEmpty = false end end return t end
+local function getKeysInTable(tbl) local keys = {} for k, _ in pairs(tbl) do keys[#keys+1] = k end return keys end
 
 
 -- TELESCOPE STUFF
@@ -31,39 +32,36 @@ local DEFAULT_TITLE = 'Creating .gitignore: Make your choice(s)'
 local ORDER_FILEPATH = 'order'
 local TEMPLATE_PATH = 'plugin/templates'
 
+-- PLUGIN DATA
+local templates_data = require("gitignore.templates")
+local order_data = require("gitignore.order")
+
 -- THE REST OF THE PLUGIN
-local paths = vim.split(vim.fn.glob(TEMPLATE_PATH .. '/*'), '\n')
-vim.schedule(function ()
-    print(vim.inspect(vim.fn.stdpath('data')))
-end)
+local templateKeys = getKeysInTable(templates_data)
 local prefixes = removeDuplicates(map(
-    map(
-        paths,
-        function (path) return path:sub(11) end),
+    templateKeys,
     function (path) return path:sub(1, path:find('%.')-1) end
 ))
 
-local function getPathsForPrefix(prefix)
+local function getTmplKeysForPrefix(prefix)
+    prefix = prefix .. "."
     local matches = {}
-    local stacks = filter(paths, function (path) return endsWith(path, '.stack') end)
-    local ignores = filter(paths, function (path) return endsWith(path, '.gitignore') end)
-    local patches = filter(paths, function (path) return endsWith(path, '.patch') end)
-    for _, path in ipairs(stacks) do
-        local filename = string.lower(string.sub(path, 11))
-        if string.sub(filename, 1, #prefix) == prefix then
-            matches[#matches+1] = path
+    local stacks = filter(templateKeys, function (templateKey) return endsWith(templateKey, '.stack') end)
+    local ignores = filter(templateKeys, function (templateKey) return endsWith(templateKey, '.gitignore') end)
+    local patches = filter(templateKeys, function (templateKey) return endsWith(templateKey, '.patch') end)
+    for _, templateKey in ipairs(stacks) do
+        if string.sub(templateKey, 1, #prefix) == prefix then
+            matches[#matches+1] = templateKey
         end
     end
-    for _, path in ipairs(ignores) do
-        local filename = string.lower(string.sub(path, 11))
-        if string.sub(filename, 1, #prefix) == prefix then
-            matches[#matches+1] = path
+    for _, templateKey in ipairs(ignores) do
+        if string.sub(templateKey, 1, #prefix) == prefix then
+            matches[#matches+1] = templateKey
         end
     end
-    for _, path in ipairs(patches) do
-        local filename = string.lower(string.sub(path, 11))
-        if string.sub(filename, 1, #prefix) == prefix then
-            matches[#matches+1] = path
+    for _, templateKey in ipairs(patches) do
+        if string.sub(templateKey, 1, #prefix) == prefix then
+            matches[#matches+1] = templateKey
         end
     end
     return matches
@@ -71,17 +69,25 @@ end
 
 
 local function createGitignore(selectionList, order)
-    local s = map(selectionList, string.lower)
-    s = removeDuplicates(s)
+    local s = removeDuplicates(selectionList)
     table.sort(s)
     table.sort(s, function (left, right)
         return (order[left] or 0) < (order[right] or 0)
     end)
     local ignoreLines = {}
+    local infoString = "# Gitignore for the following technologies: "
+    for i, v in ipairs(s) do
+        infoString = infoString .. v
+        if i < #s then
+            infoString = infoString .. ', '
+        end
+    end
+    table.insert(ignoreLines, infoString)
+    table.insert(ignoreLines, '')
     for _, prefix in ipairs(s) do
-        local p = getPathsForPrefix(prefix)
-        for _, path in ipairs(p) do
-            local fileLines = vim.split(readAll(path):gsub('\r\n', '\n'), '\n')
+        local p = getTmplKeysForPrefix(prefix)
+        for _, templateKey in ipairs(p) do
+            local fileLines = vim.split(templates_data[templateKey], '\n')
             for _, line in ipairs(fileLines) do
                 table.insert(ignoreLines, line)
             end
@@ -95,8 +101,6 @@ end
 
 function M.generate(on_choice, sorter_opts)
     sorter_opts = sorter_opts or {}
-    local order_data = vim.split(readAll(ORDER_FILEPATH), '\n')
-    order_data = invertTable(filter(order_data, function (line) return not line:sub(1, 1) == '#' end))
     local defaults = {
         prompt_title = DEFAULT_TITLE,
         previewer = false,
@@ -127,7 +131,12 @@ function M.generate(on_choice, sorter_opts)
                     local new_buf = vim.api.nvim_create_buf(true, false)
                     vim.api.nvim_buf_set_lines(new_buf, 0, -1, true, ignoreLines)
                     vim.api.nvim_buf_set_option(new_buf, 'filetype', 'gitignore')
-                    vim.api.nvim_buf_set_name(new_buf, '.gitignore')
+                    local ok, _ = pcall(function ()
+                        vim.api.nvim_buf_set_name(new_buf, '.gitignore')
+                    end)
+                    if not ok then
+                        vim.schedule(function () print('Buffer with name \'.gitignore\' already exists, didn\'t name buffer!') end)
+                    end
                     actions.close(prompt_bufnr)
                     vim.api.nvim_win_set_buf(0, new_buf)
                 else

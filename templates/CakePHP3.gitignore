@@ -1,7 +1,0 @@
-# CakePHP 3
-
-/config/app.php
-/config/.env
-/logs/*
-/tmp/*
-/vendor/*
