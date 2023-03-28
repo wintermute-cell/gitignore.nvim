@@ -12,10 +12,12 @@ generating `.gitignore` files offline, and directly from within neovim.
 1. [Usage](#usage)
 3. [Credits](#credits)
 
-## Installation
-`gitignore.nvim` depends on
-[telescope.nvim](https://github.com/nvim-telescope/telescope.nvim)!
+## Installation & Dependency
+**`gitignore.nvim` depends on
+[telescope.nvim](https://github.com/nvim-telescope/telescope.nvim), 
+please [install](https://github.com/nvim-telescope/telescope.nvim#installation) that plugin first!**
 
+After installing `telescope.nvim`, you can install `gitignore.nvim` like this:
 
 Using [vim-plug](https://github.com/junegunn/vim-plug):
 ```viml
