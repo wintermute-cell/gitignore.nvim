@@ -9,8 +9,9 @@ This plugin is functionally identical to the service offered by
 generating `.gitignore` files offline, and directly from within neovim.
 
 1. [Installation](#installation)
-1. [Usage](#usage)
-3. [Credits](#credits)
+2. [Usage](#usage)
+3. [Demo](#demo)
+4. [Credits](#credits)
 
 ## Installation & Dependency
 **`gitignore.nvim` depends on
@@ -48,7 +49,8 @@ to create a keymap:
 local gitignore = require("gitignore")
 vim.keymap.set("n", "<leader>gi", gitignore.generate)
 ```
-
+## Demo
+[![asciicast](https://asciinema.org/a/GOHXDt4kYsR8pzrxTEOIridTf.svg)](https://asciinema.org/a/GOHXDt4kYsR8pzrxTEOIridTf)
 
 ## Credits
 Thanks to [Toptal](https://github.com/toptal/gitignore) for providing a huge
