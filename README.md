@@ -49,6 +49,17 @@ to create a keymap:
 local gitignore = require("gitignore")
 vim.keymap.set("n", "<leader>gi", gitignore.generate)
 ```
+
+`gitignore.nvim` makes use of `telescope.nvim`'s multi-selection keybinds. 
+This means that by default, you can (de-)select multiple keywords with `<Tab>`,
+and confirm your selection with `<CR>` (Enter).
+In case of multiple selected keywords,
+the keyword highlighted you press `<CR>` on will **not** be added to the selection!
+
+For convenience, when no multi-selection is made before pressing `<CR>`,
+`<CR>` will actually add the highlighted item to the selection, and create
+a `.gitignore` file for the single keyword.
+
 ## Demo
 [![asciicast](https://asciinema.org/a/GOHXDt4kYsR8pzrxTEOIridTf.svg)](https://asciinema.org/a/GOHXDt4kYsR8pzrxTEOIridTf)
 
