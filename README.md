@@ -32,24 +32,30 @@ call dein#add("wintermute-cell/gitignore.nvim")
 
 Using [packer.nvim](https://github.com/wbthomason/packer.nvim):
 ```lua
-use {
-  "wintermute-cell/gitignore.nvim"
-}
+use({
+     "wintermute-cell/gitignore.nvim",
+     requires = {
+        "nvim-telescope/telescope.nvim"
+     }
+})
 ```
 
 ## Usage
-This plugin ships with only one command:
+This plugin ships with only one command which when run,
+it will create a buffer with the `.gitignore` contents:
 ```
 :Gitignore
 ```
+The buffer will not save automatically, so there is no risk of overwriting an existing `.gitignore`.
 
-Furthermore, you can use the corresponding `lua` function directly, for example
+Alternatively, you can use the corresponding `lua` function directly, for example
 to create a keymap:
-```
+```lua
 local gitignore = require("gitignore")
 vim.keymap.set("n", "<leader>gi", gitignore.generate)
 ```
 
+### Selecting multiple items
 `gitignore.nvim` makes use of `telescope.nvim`'s multi-selection keybinds. 
 This means that by default, you can (de-)select multiple keywords with `<Tab>`,
 and confirm your selection with `<CR>` (Enter).
