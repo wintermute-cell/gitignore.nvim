@@ -42,21 +42,20 @@ use({
 
 ## Usage
 This plugin ships with only one command which when run,
-it will create a buffer with `.gitignore` content.
-It won't save file for now. To select multiple entires, use <kbd>TAB</kbd> hotkey.
-
+it will create a buffer with the `.gitignore` contents:
 ```
 :Gitignore
 ```
-
+The buffer will not save automatically, so there is no risk of overwriting an existing `.gitignore`.
 
 Alternatively, you can use the corresponding `lua` function directly, for example
 to create a keymap:
-```
+```lua
 local gitignore = require("gitignore")
 vim.keymap.set("n", "<leader>gi", gitignore.generate)
 ```
 
+### Selecting multiple items
 `gitignore.nvim` makes use of `telescope.nvim`'s multi-selection keybinds. 
 This means that by default, you can (de-)select multiple keywords with `<Tab>`,
 and confirm your selection with `<CR>` (Enter).
