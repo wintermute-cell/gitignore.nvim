@@ -15,7 +15,7 @@ local function filter(tbl, f) local t = {} local i = 1 for _, v in ipairs(tbl) d
 local function invertTable(tbl) local t = {} for k, v in pairs(tbl) do t[v] = k end return t end
 local function endsWith(str, ending) return string.sub(str, -#ending) == ending end
 local function readAll(filePath) local f = assert(io.open(filePath, "r")) local content = f:read("*all") f:close() return content end
-local function collapseEmptyStrings(tbl) local t = {} local lastValWasEmpty = false for _, value in ipairs(tbl) do if not lastValWasEmpty then table.insert(t, value) end if value == '' then lastValWasEmpty = true else lastValWasEmpty = false end end return t end
+local function collapseEmptyLines(tbl) local t = {} local lastValWasEmptyString = false for _, value in ipairs(tbl) do if (not lastValWasEmptyString) or value ~= '' then table.insert(t, value) end if value == '' then lastValWasEmptyString = true else lastValWasEmptyString = false end end return t end
 local function getKeysInTable(tbl) local keys = {} for k, _ in pairs(tbl) do keys[#keys+1] = k end return keys end
 
 
@@ -95,8 +95,9 @@ local function createGitignore(selectionList, order)
         end
     end
     ignoreLines = removeDuplicates(ignoreLines, {''})
-    ignoreLines = collapseEmptyStrings(ignoreLines)
-    return ignoreLines
+    ignoreLines = collapseEmptyLines(ignoreLines)
+    local x = ignoreLines
+    return x
 end
 
 function M.generate(on_choice, sorter_opts)
