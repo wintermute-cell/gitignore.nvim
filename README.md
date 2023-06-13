@@ -8,12 +8,14 @@ This plugin is functionally identical to the service offered by
 [gitignore.io](https://www.toptal.com/developers/gitignore/), but capable of
 generating `.gitignore` files offline, and directly from within neovim.
 
+[!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/yellow_img.png)](https://www.buymeacoffee.com/winterv)
+
 1. [Installation](#installation)
 2. [Usage](#usage)
 3. [Demo](#demo)
 4. [Credits](#credits)
 
-## Installation & Dependency
+## Installation & Dependencies
 **`gitignore.nvim` depends on
 [telescope.nvim](https://github.com/nvim-telescope/telescope.nvim), 
 please [install](https://github.com/nvim-telescope/telescope.nvim#installation) that plugin first!**
