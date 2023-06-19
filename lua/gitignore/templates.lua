@@ -5754,7 +5754,10 @@ M["HomeAssistant.gitignore"] = [[
 *.crt
 *.csr
 *.key
+.cloud
 .google.token
+.HA_VERSION
+.storage
 .uuid
 icloud/
 google_calendars.yaml
@@ -5763,6 +5766,7 @@ home-assistant.db
 home-assistant_v2.db
 home-assistant_v2.db-*
 html5_push_registrations.conf
+image
 ip_bans.yaml
 known_devices.yaml
 phue.conf
@@ -5770,6 +5774,7 @@ plex.conf
 pyozw.sqlite
 secrets.yaml
 tradfri.conf
+webostv.conf
 
 # Temporary files
 *.db-journal
@@ -5779,14 +5784,14 @@ tts
 # automatically downloaded dependencies
 deps
 lib
-www
 
 # Log files
 home-assistant.log
+home-assistant.log.*
 ozw_log.txt
 
 # Development files
-custom_components/
+custom_components
 ]]
 M["Homebrew.gitignore"] = [[
 Brewfile.lock.json
@@ -6488,6 +6493,13 @@ M["JabRef.gitignore"] = [[
 # JabRef - https://www.jabref.org/
 *.bak
 *.sav
+]]
+M["Janet.gitignore"] = [[
+# Compiled binaries
+build/
+
+# Dependency directory
+jpm_tree/
 ]]
 M["Java.gitignore"] = [[
 # Compiled class file
@@ -17379,6 +17391,12 @@ M["Zsh.gitignore"] = [[
 
 # Zsh completion-optimization dumpfile
 *zcompdump*
+
+# Zsh history
+.zsh_history
+
+# Zsh sessions
+.zsh_sessions
 
 # Zsh zcalc history
 .zcalc_history
