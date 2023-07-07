@@ -100,6 +100,32 @@ local function createGitignore(selectionList, order)
     return x
 end
 
+local function createGitignoreBuffer(ignoreLines, prompt_bufnr)
+    local gitignoreFile = ".gitignore"
+    local existingLines = {}
+    if vim.fn.filereadable(gitignoreFile) == 1 then
+        existingLines = vim.fn.readfile(gitignoreFile)
+    end
+    local separator = {
+        "#--------------------------------------------------#",
+        "# The following was generated with gitignore.nvim: #",
+        "#--------------------------------------------------#",
+    }
+    local allLines = vim.tbl_flatten({existingLines, separator, ignoreLines})
+    local new_buf = vim.api.nvim_create_buf(true, false)
+    vim.api.nvim_buf_set_lines(new_buf, 0, -1, true, allLines)
+    vim.api.nvim_buf_set_option(new_buf, 'filetype', 'gitignore')
+    local ok, _ = pcall(function ()
+        vim.api.nvim_buf_set_name(new_buf, gitignoreFile)
+    end)
+    if not ok then
+        vim.schedule(function () print('Buffer with name \'.gitignore\' already exists, didn\'t name buffer!') end)
+    end
+    actions.close(prompt_bufnr)
+    vim.api.nvim_win_set_buf(0, new_buf)
+end
+
+
 function M.generate(on_choice, sorter_opts)
     sorter_opts = sorter_opts or {}
     local defaults = {
@@ -129,17 +155,7 @@ function M.generate(on_choice, sorter_opts)
                 end
                 local ignoreLines = createGitignore(multiSelection, order_data)
                 if #ignoreLines > 0 then
-                    local new_buf = vim.api.nvim_create_buf(true, false)
-                    vim.api.nvim_buf_set_lines(new_buf, 0, -1, true, ignoreLines)
-                    vim.api.nvim_buf_set_option(new_buf, 'filetype', 'gitignore')
-                    local ok, _ = pcall(function ()
-                        vim.api.nvim_buf_set_name(new_buf, '.gitignore')
-                    end)
-                    if not ok then
-                        vim.schedule(function () print('Buffer with name \'.gitignore\' already exists, didn\'t name buffer!') end)
-                    end
-                    actions.close(prompt_bufnr)
-                    vim.api.nvim_win_set_buf(0, new_buf)
+                    createGitignoreBuffer(ignoreLines, prompt_bufnr)
                 else
                     actions.close(prompt_bufnr)
                     vim.schedule(function () print('Nothing selected, creation of .gitignore cancelled!') end)
