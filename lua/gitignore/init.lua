@@ -12,9 +12,7 @@ local function map(tbl, f) local t = {} for i,v in ipairs(tbl) do t[i] = f(v) en
 local function isIn(tbl, val) for _, value in ipairs(tbl) do if val == value then return true end end return false end
 local function removeDuplicates(tbl, ignored) ignored = ignored or {} local hash = {} local t = {} for _,v in ipairs(tbl) do if (not hash[v]) then t[#t+1] = v if not isIn(ignored, v) then hash[v] = true end end end return t end
 local function filter(tbl, f) local t = {} local i = 1 for _, v in ipairs(tbl) do if f(v) then t[i] = v i = i + 1 end end return t end
-local function invertTable(tbl) local t = {} for k, v in pairs(tbl) do t[v] = k end return t end
 local function endsWith(str, ending) return string.sub(str, -#ending) == ending end
-local function readAll(filePath) local f = assert(io.open(filePath, "r")) local content = f:read("*all") f:close() return content end
 local function collapseEmptyLines(tbl) local t = {} local lastValWasEmptyString = false for _, value in ipairs(tbl) do if (not lastValWasEmptyString) or value ~= '' then table.insert(t, value) end if value == '' then lastValWasEmptyString = true else lastValWasEmptyString = false end end return t end
 local function getKeysInTable(tbl) local keys = {} for k, _ in pairs(tbl) do keys[#keys+1] = k end return keys end
 
@@ -29,8 +27,6 @@ local conf = require("telescope.config").values
 
 -- DEFINITIONS
 local DEFAULT_TITLE = 'Creating .gitignore: Make your choice(s)'
-local ORDER_FILEPATH = 'order'
-local TEMPLATE_PATH = 'plugin/templates'
 
 -- PLUGIN DATA
 local templates_data = require("gitignore.templates")

@@ -48,7 +48,9 @@ it will create a buffer with the `.gitignore` contents:
 ```
 :Gitignore
 ```
-The buffer will not save automatically, so there is no risk of overwriting an existing `.gitignore`.
+If an existing `.gitignore` is found, the generated contents will be appended
+to the existing lines. The buffer will not save automatically, so there is no
+risk of overwriting an existing `.gitignore`.
 
 Alternatively, you can use the corresponding `lua` function directly, for example
 to create a keymap:
