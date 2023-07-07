@@ -96,11 +96,24 @@ local function createGitignore(selectionList, order)
     return x
 end
 
-local function createGitignoreBuffer(ignoreLines, prompt_bufnr)
-    local gitignoreFile = ".gitignore"
+local function createGitignoreBuffer(chosen_path, ignoreLines, prompt_bufnr)
+    local gitignoreFile = chosen_path
+    -- Check if chosen_path is empty, if so set gitignoreFile as ".gitignore".
+    if not gitignoreFile or gitignoreFile == "" then
+        gitignoreFile = ".gitignore"
+    elseif not gitignoreFile:match(".gitignore$") then
+        -- If chosen_path ends with "/", append ".gitignore" instead of "/.gitignore".
+        if gitignoreFile:sub(-1) == "/" then
+            gitignoreFile = gitignoreFile .. ".gitignore"
+        else
+            gitignoreFile = gitignoreFile .. "/.gitignore"
+        end
+    end
     local existingLines = {}
-    if vim.fn.filereadable(gitignoreFile) == 1 then
-        existingLines = vim.fn.readfile(gitignoreFile)
+    if vim.g.gitignore_nvim_overwrite ~= true then
+        if vim.fn.filereadable(gitignoreFile) == 1 then
+            existingLines = vim.fn.readfile(gitignoreFile)
+        end
     end
     local separator = {
         "#--------------------------------------------------#",
@@ -122,7 +135,8 @@ local function createGitignoreBuffer(ignoreLines, prompt_bufnr)
 end
 
 
-function M.generate(on_choice, sorter_opts)
+
+function M.generate(opts, sorter_opts)
     sorter_opts = sorter_opts or {}
     local defaults = {
         prompt_title = DEFAULT_TITLE,
@@ -151,7 +165,7 @@ function M.generate(on_choice, sorter_opts)
                 end
                 local ignoreLines = createGitignore(multiSelection, order_data)
                 if #ignoreLines > 0 then
-                    createGitignoreBuffer(ignoreLines, prompt_bufnr)
+                    createGitignoreBuffer(opts.args, ignoreLines, prompt_bufnr)
                 else
                     actions.close(prompt_bufnr)
                     vim.schedule(function () print('Nothing selected, creation of .gitignore cancelled!') end)
@@ -193,6 +207,6 @@ function M.generate(on_choice, sorter_opts)
     return pickers.new(themes.get_dropdown(), defaults):find()
 end
 
-vim.api.nvim_create_user_command('Gitignore', M.generate, {})
+vim.api.nvim_create_user_command('Gitignore', M.generate, { nargs = '?', complete = 'file' })
 
 return M
