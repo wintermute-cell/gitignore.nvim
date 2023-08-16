@@ -21,7 +21,7 @@ generating `.gitignore` files offline, and directly from within neovim.
 [telescope.nvim](https://github.com/nvim-telescope/telescope.nvim) to provide
 [multi-selection](#selecting-multiple-items). Without [installing
 telescope](https://github.com/nvim-telescope/telescope.nvim#installation) you
-will not be able to select multiple technologies.
+will not be able to select multiple technologies.**
 
 After installing `telescope.nvim`, you can install `gitignore.nvim` like this:
 
