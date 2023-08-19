@@ -85,14 +85,12 @@ end
 ---@param selectionList table list of selected templateNames
 ---@param prompt_bufnr? number bufnr for closing telescope plugin if exists
 function M.createGitignoreBuffer(chosen_path, selectionList, prompt_bufnr)
-    local ignoreLines = createGitignore(selectionList, order_data)
-    if #ignoreLines < 1 then
-        return
-    else
+    if #selectionList < 1 then
         removeBufIfHasTelescope(prompt_bufnr)
         vim.schedule(function () print('Nothing selected, creation of .gitignore cancelled!') end)
+        return
     end
-
+    local ignoreLines = createGitignore(selectionList, order_data)
     local gitignoreFile = chosen_path
     -- Check if chosen_path is empty, if so set gitignoreFile as ".gitignore".
     if not gitignoreFile or gitignoreFile == "" then
