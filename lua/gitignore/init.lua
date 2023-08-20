@@ -66,6 +66,10 @@ local function createGitignore(selectionList, order)
     table.insert(ignoreLines, '')
     for _, prefix in ipairs(s) do
         local p = getTmplKeysForPrefix(prefix)
+        if #p == 0 then
+            vim.schedule(function () print('Error while creating .gitignore, unknown selection: ' .. prefix) end)
+            return nil
+        end
         for _, templateKey in ipairs(p) do
             local fileLines = vim.split(templates_data[templateKey], '\n')
             for _, line in ipairs(fileLines) do
@@ -91,6 +95,9 @@ function M.createGitignoreBuffer(chosen_path, selectionList, prompt_bufnr)
         return
     end
     local ignoreLines = createGitignore(selectionList, order_data)
+    if ignoreLines == nil then
+        return
+    end
     local gitignoreFile = chosen_path
     -- Check if chosen_path is empty, if so set gitignoreFile as ".gitignore".
     if not gitignoreFile or gitignoreFile == "" then
