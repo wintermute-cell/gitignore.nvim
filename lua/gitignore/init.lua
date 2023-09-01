@@ -52,7 +52,7 @@ local function createGitignore(selectionList, order)
     local s = removeDuplicates(selectionList)
     table.sort(s)
     table.sort(s, function (left, right)
-        return (order[left] or 0) < (order[right] or 0)
+        return (order[left:lower()] or 0) < (order[right:lower()] or 0)
     end)
     local ignoreLines = {}
     local infoString = "# Gitignore for the following technologies: "
