@@ -55,6 +55,11 @@ If an existing `.gitignore` is found, the generated contents will be appended
 to the existing lines. The buffer will not save automatically, so there is no
 risk of overwriting an existing `.gitignore`.
 
+If you want to override your `.gitignore` instead, pass the command like this:
+```
+:Gitignore! [path]
+```
+
 You can **optionally** pass a `path` argument to point the command to a
 specific directory (for example if you have nested `.gitignore` files).
 
@@ -76,6 +81,28 @@ vim.keymap.set("n", "<leader>gi",
 )
 ```
 
+Or forced:
+```lua
+local gitignore = require("gitignore")
+local my_path = "./some/path"
+vim.keymap.set("n", "<leader>gi",
+    function ()
+        gitignore.generate(my_path, true)
+    end
+)
+```
+
+Or explicitly *not* forced, wether `g:gitignore_nvim_override` is `true` or not:
+```lua
+local gitignore = require("gitignore")
+local my_path = "./some/path"
+vim.keymap.set("n", "<leader>gi",
+    function ()
+        gitignore.generate(my_path, false)
+    end
+)
+```
+
 ### Selecting multiple items
 Without telescope, `gitignore.nvim` does not allow you to select multiple
 technologies for your `.gitignore`, since the fallback picker, `vim.ui.select()`,
@@ -92,7 +119,7 @@ below](#custom-picker)).
 automatically, there is no further configuration required.
 
 ### Selecting multiple items with telescope.nvim installed
-`gitignore.nvim` makes use of `telescope.nvim`'s multi-selection keybinds. 
+`gitignore.nvim` makes use of `telescope.nvim`'s multi-selection keybinds.
 This means that by default, you can (de-)select multiple keywords with `<Tab>`,
 and confirm your selection with `<CR>` (Enter).
 In case of multiple selected keywords, the keyword highlighted you press `<CR>`
@@ -124,7 +151,7 @@ Here's an example implementation using fzf-lua:
 local gitignore = require("gitignore")
 local fzf = require("fzf-lua")
 
-gitignore.generate = function(opts)
+gitignore.generate_cmd = function(opts)
     local picker_opts = {
         -- the content of opts.args may also be displayed here for example.
         prompt = "Select templates for gitignore file> ",
@@ -153,7 +180,7 @@ end
 > To do that, recreate the command after defining your generate function as
 > follows:
 ```lua
-vim.api.nvim_create_user_command("Gitignore", gitignore.generate, { nargs = "?", complete = "file" })
+vim.api.nvim_create_user_command("Gitignore", gitignore.generate_cmd, { nargs = "?", complete = "file" })
 ```
 
 ## Demo
