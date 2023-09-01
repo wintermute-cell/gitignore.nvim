@@ -1,10 +1,3 @@
-local has_telescope, _ = pcall(require, "telescope")
-if not has_telescope then
-    error(
-        "This plugin requires telescope.nvim (https://github.com/nvim-telescope/telescope.nvim)"
-    )
-end
-
 local M = {}
 
 -- GENERIC HELPER FUNCTIONS
@@ -15,15 +8,7 @@ local function filter(tbl, f) local t = {} local i = 1 for _, v in ipairs(tbl) d
 local function endsWith(str, ending) return string.sub(str, -#ending) == ending end
 local function collapseEmptyLines(tbl) local t = {} local lastValWasEmptyString = false for _, value in ipairs(tbl) do if (not lastValWasEmptyString) or value ~= '' then table.insert(t, value) end if value == '' then lastValWasEmptyString = true else lastValWasEmptyString = false end end return t end
 local function getKeysInTable(tbl) local keys = {} for k, _ in pairs(tbl) do keys[#keys+1] = k end return keys end
-
-
--- TELESCOPE STUFF
-local themes = require("telescope.themes")
-local actions = require("telescope.actions")
-local state = require("telescope.actions.state")
-local pickers = require("telescope.pickers")
-local finders = require("telescope.finders")
-local conf = require("telescope.config").values
+local function removeBufIfHasTelescope(prompt_bufnr) if prompt_bufnr and pcall(require, "telescope") then require("telescope.actions").close(prompt_bufnr) end end
 
 -- DEFINITIONS
 local DEFAULT_TITLE = 'Creating .gitignore: Make your choice(s)'
@@ -34,7 +19,7 @@ local order_data = require("gitignore.order")
 
 -- THE REST OF THE PLUGIN
 local templateKeys = getKeysInTable(templates_data)
-local prefixes = removeDuplicates(map(
+M.templateNames = removeDuplicates(map(
     templateKeys,
     function (path) return path:sub(1, path:find('%.')-1) end
 ))
@@ -63,7 +48,6 @@ local function getTmplKeysForPrefix(prefix)
     return matches
 end
 
-
 local function createGitignore(selectionList, order)
     local s = removeDuplicates(selectionList)
     table.sort(s)
@@ -82,6 +66,10 @@ local function createGitignore(selectionList, order)
     table.insert(ignoreLines, '')
     for _, prefix in ipairs(s) do
         local p = getTmplKeysForPrefix(prefix)
+        if #p == 0 then
+            vim.schedule(function () print('Error while creating .gitignore, unknown selection: ' .. prefix) end)
+            return nil
+        end
         for _, templateKey in ipairs(p) do
             local fileLines = vim.split(templates_data[templateKey], '\n')
             for _, line in ipairs(fileLines) do
@@ -96,7 +84,20 @@ local function createGitignore(selectionList, order)
     return x
 end
 
-local function createGitignoreBuffer(chosen_path, ignoreLines, prompt_bufnr)
+--- Creates the gitignore to new buffer or new file if path is provided.
+---@param chosen_path? string path to .gitignore
+---@param selectionList table list of selected templateNames
+---@param prompt_bufnr? number bufnr for closing telescope plugin if exists
+function M.createGitignoreBuffer(chosen_path, selectionList, prompt_bufnr)
+    if #selectionList < 1 then
+        removeBufIfHasTelescope(prompt_bufnr)
+        vim.schedule(function () print('Nothing selected, creation of .gitignore cancelled!') end)
+        return
+    end
+    local ignoreLines = createGitignore(selectionList, order_data)
+    if ignoreLines == nil then
+        return
+    end
     local gitignoreFile = chosen_path
     -- Check if chosen_path is empty, if so set gitignoreFile as ".gitignore".
     if not gitignoreFile or gitignoreFile == "" then
@@ -130,19 +131,25 @@ local function createGitignoreBuffer(chosen_path, ignoreLines, prompt_bufnr)
     if not ok then
         vim.schedule(function () print('Buffer with name \'.gitignore\' already exists, didn\'t name buffer!') end)
     end
-    actions.close(prompt_bufnr)
+    removeBufIfHasTelescope(prompt_bufnr)
     vim.api.nvim_win_set_buf(0, new_buf)
 end
 
+local function call_telescope_win(opts, sorter_opts)
+    -- TELESCOPE STUFF
+    local themes = require("telescope.themes")
+    local actions = require("telescope.actions")
+    local state = require("telescope.actions.state")
+    local pickers = require("telescope.pickers")
+    local finders = require("telescope.finders")
+    local conf = require("telescope.config").values
 
-
-function M.generate(opts, sorter_opts)
     sorter_opts = sorter_opts or {}
     local defaults = {
         prompt_title = DEFAULT_TITLE,
         previewer = false,
         finder = finders.new_table({
-            results = prefixes,
+            results = M.templateNames,
         }),
         sorter = conf.generic_sorter(sorter_opts),
         attach_mappings = function(prompt_bufnr)
@@ -163,13 +170,7 @@ function M.generate(opts, sorter_opts)
                 if #multiSelection <= 0 then
                     multiSelection = {state.get_selected_entry()[1]}
                 end
-                local ignoreLines = createGitignore(multiSelection, order_data)
-                if #ignoreLines > 0 then
-                    createGitignoreBuffer(opts.args, ignoreLines, prompt_bufnr)
-                else
-                    actions.close(prompt_bufnr)
-                    vim.schedule(function () print('Nothing selected, creation of .gitignore cancelled!') end)
-                end
+                M.createGitignoreBuffer(opts.args, multiSelection, prompt_bufnr)
             end)
 
             actions.toggle_selection:enhance({
@@ -205,6 +206,23 @@ function M.generate(opts, sorter_opts)
         end,
     }
     return pickers.new(themes.get_dropdown(), defaults):find()
+end
+
+--- Create a window to pick gitignores
+---@param opts table options that passed in cmd
+---@param sorter_opts? table opts for telescope sorters if exists
+function M.generate(opts, sorter_opts)
+	local has_telescope, _ = pcall(require, "telescope")
+	if has_telescope then
+		return call_telescope_win(opts, sorter_opts)
+	end
+
+	local winopts = {
+		prompt = DEFAULT_TITLE,
+	}
+	vim.ui.select(M.templateNames, winopts, function(selected)
+		M.createGitignoreBuffer(opts.args, { selected })
+	end)
 end
 
 vim.api.nvim_create_user_command('Gitignore', M.generate, { nargs = '?', complete = 'file' })

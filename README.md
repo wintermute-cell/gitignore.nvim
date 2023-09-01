@@ -17,9 +17,11 @@ generating `.gitignore` files offline, and directly from within neovim.
 4. [Credits](#credits)
 
 ## Installation & Dependencies
-**`gitignore.nvim` depends on
-[telescope.nvim](https://github.com/nvim-telescope/telescope.nvim), 
-please [install](https://github.com/nvim-telescope/telescope.nvim#installation) that plugin first!**
+**`gitignore.nvim` optionally depends on
+[telescope.nvim](https://github.com/nvim-telescope/telescope.nvim) to provide
+[multi-selection](#selecting-multiple-items). Without [installing
+telescope](https://github.com/nvim-telescope/telescope.nvim#installation) you
+will not be able to select multiple technologies.**
 
 After installing `telescope.nvim`, you can install `gitignore.nvim` like this:
 
@@ -38,7 +40,7 @@ Using [packer.nvim](https://github.com/wbthomason/packer.nvim):
 use({
      "wintermute-cell/gitignore.nvim",
      requires = {
-        "nvim-telescope/telescope.nvim"
+        "nvim-telescope/telescope.nvim" -- optional: for multi-select
      }
 })
 ```
@@ -67,7 +69,7 @@ Or with a path:
 ```lua
 local gitignore = require("gitignore")
 local my_path = "./some/path"
-vim.keymap.set("n", "<leader>gi", 
+vim.keymap.set("n", "<leader>gi",
     function ()
         gitignore.generate(my_path)
     end
@@ -75,6 +77,21 @@ vim.keymap.set("n", "<leader>gi",
 ```
 
 ### Selecting multiple items
+Without telescope, `gitignore.nvim` does not allow you to select multiple
+technologies for your `.gitignore`, since the fallback picker, `vim.ui.select()`,
+can only select one item.
+Therefore, if you want to be able to select multiple technologies, you must
+either [install
+telescope.nvim](https://github.com/nvim-telescope/telescope.nvim#installation)
+(you may find an example using `packer.nvim` in the
+[Installation](#installation--dependencies) section), or override the provided
+`generate` method with your own implementation ([see section
+below](#custom-picker)).
+
+`gitignore.nvim` will detect if `telescope.nvim` is installed and use it
+automatically, there is no further configuration required.
+
+### Selecting multiple items with telescope.nvim installed
 `gitignore.nvim` makes use of `telescope.nvim`'s multi-selection keybinds. 
 This means that by default, you can (de-)select multiple keywords with `<Tab>`,
 and confirm your selection with `<CR>` (Enter).
@@ -92,7 +109,52 @@ instead of appending to it, you can set:
 vim.g.gitignore_nvim_overwrite = true
 ```
 If this variable is set to `false`, or not set at all, `:Gitignore` will take
-into account an existing gitignore.
+into account an existing `.gitignore`.
+
+### Custom Picker
+
+Instead of using `telescope.nvim` or the native `vim.ui.select()`, you may
+implement your own solution according to the following contract:
+1. `gitignore.nvim` provides list of templateNames and two methods `generate` and `createGititnoreBuffer`.
+2. As its first parameter, the `generate` method will receive an `opts` table, containing the target path for the `.gitignore` in `opts.args`.
+3. One must pass on `opts.args`, and a list of selected templateNames to `createGitignoreBuffer`.
+
+Here's an example implementation using fzf-lua:
+```lua
+local gitignore = require("gitignore")
+local fzf = require("fzf-lua")
+
+gitignore.generate = function(opts)
+    local picker_opts = {
+        -- the content of opts.args may also be displayed here for example.
+        prompt = "Select templates for gitignore file> ",
+        winopts = {
+            width = 0.4,
+            height = 0.3,
+        },
+        actions = {
+            default = function(selected, _)
+                -- as stated in point (3) of the contract above, opts.args and
+                -- a list of selected templateNames are passed.
+                gitignore.createGitignoreBuffer(opts.args, selected)
+            end,
+        },
+    }
+    fzf.fzf_exec(function(fzf_cb)
+        for _, prefix in ipairs(gitignore.templateNames) do
+            fzf_cb(prefix)
+        end
+        fzf_cb()
+    end, picker_opts)
+end
+```
+> __Note__
+> Note that the above will not overwrite the `:Gitignore` command.
+> To do that, recreate the command after defining your generate function as
+> follows:
+```lua
+vim.api.nvim_create_user_command("Gitignore", gitignore.generate, { nargs = "?", complete = "file" })
+```
 
 ## Demo
 [![asciicast](https://asciinema.org/a/GOHXDt4kYsR8pzrxTEOIridTf.svg)](https://asciinema.org/a/GOHXDt4kYsR8pzrxTEOIridTf)
