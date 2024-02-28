@@ -84,11 +84,11 @@ local function createGitignore(selectionList, order)
     return x
 end
 
---- Creates the gitignore to new buffer or new file if path is provided.
+--- Creates the gitignore in a new buffer (or a new file if path is provided).
 ---@param chosen_path? string path to .gitignore
 ---@param selectionList table list of selected templateNames
 ---@param prompt_bufnr? number bufnr for closing telescope plugin if exists
-function M.createGitignoreBuffer(chosen_path, selectionList, prompt_bufnr)
+function M.createGitignoreBuffer(chosen_path, selectionList, prompt_bufnr, overwrite)
     if #selectionList < 1 then
         removeBufIfHasTelescope(prompt_bufnr)
         vim.schedule(function () print('Nothing selected, creation of .gitignore cancelled!') end)
@@ -111,7 +111,10 @@ function M.createGitignoreBuffer(chosen_path, selectionList, prompt_bufnr)
         end
     end
     local existingLines = {}
-    if vim.g.gitignore_nvim_overwrite ~= true then
+    if not overwrite then
+        overwrite = vim.g.gitignore_nvim_overwrite
+    end
+    if overwrite ~= true then
         if vim.fn.filereadable(gitignoreFile) == 1 then
             existingLines = vim.fn.readfile(gitignoreFile)
         end
@@ -135,7 +138,7 @@ function M.createGitignoreBuffer(chosen_path, selectionList, prompt_bufnr)
     vim.api.nvim_win_set_buf(0, new_buf)
 end
 
-local function call_telescope_win(opts, sorter_opts)
+local function call_telescope_win(path, sorter_opts, overwrite)
     -- TELESCOPE STUFF
     local themes = require("telescope.themes")
     local actions = require("telescope.actions")
@@ -170,7 +173,7 @@ local function call_telescope_win(opts, sorter_opts)
                 if #multiSelection <= 0 then
                     multiSelection = {state.get_selected_entry()[1]}
                 end
-                M.createGitignoreBuffer(opts.args, multiSelection, prompt_bufnr)
+                M.createGitignoreBuffer(path, multiSelection, prompt_bufnr, overwrite)
             end)
 
             actions.toggle_selection:enhance({
@@ -212,19 +215,29 @@ end
 ---@param opts table options that passed in cmd
 ---@param sorter_opts? table opts for telescope sorters if exists
 function M.generate(opts, sorter_opts)
+
+    -- get opts.args (path) and opts.bang (force overwrite), if exists, otherwise set to default
+    opts = opts or {}
+    path = opts.args or ""
+    overwrite = opts.bang or false
+
 	local has_telescope, _ = pcall(require, "telescope")
 	if has_telescope then
-		return call_telescope_win(opts, sorter_opts)
+		return call_telescope_win(path, sorter_opts, overwrite) -- TODO: dont wanna pass opts
 	end
 
 	local winopts = {
 		prompt = DEFAULT_TITLE,
 	}
 	vim.ui.select(M.templateNames, winopts, function(selected)
-		M.createGitignoreBuffer(opts.args, { selected })
+		M.createGitignoreBuffer(path, { selected }, overwrite)
 	end)
 end
 
-vim.api.nvim_create_user_command('Gitignore', M.generate, { nargs = '?', complete = 'file' })
+vim.api.nvim_create_user_command('Gitignore', M.generate, {
+    nargs = '?', -- 0 or 1 arguments
+    complete = 'file', -- complete with files
+    bang = true -- allow the command to be run with a !
+})
 
 return M

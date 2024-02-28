@@ -110,6 +110,12 @@ vim.g.gitignore_nvim_overwrite = true
 If this variable is set to `false`, or not set at all, `:Gitignore` will take
 into account an existing `.gitignore`.
 
+Alternatively, you may call the command with a bang, like this:
+```
+:Gitignore! [path]
+```
+This will have the same effect as setting `vim.g.gitignore_nvim_overwrite = true` for a single call.
+
 ### Custom Picker
 
 Instead of using `telescope.nvim` or the native `vim.ui.select()`, you may
