@@ -25,14 +25,13 @@ will not be able to select multiple technologies.**
 
 After installing `telescope.nvim`, you can install `gitignore.nvim` like this:
 
-Using [vim-plug](https://github.com/junegunn/vim-plug):
-```viml
-Plug 'wintermute-cell/gitignore.nvim'
-```
-
-Using [dein](https://github.com/Shougo/dein.vim):
-```viml
-call dein#add("wintermute-cell/gitignore.nvim")
+Using [lazy.nvim](https://github.com/folke/lazy.nvim)
+```lua
+{"wintermute-cell/gitignore.nvim",
+    config = function()
+        require('gitignore')
+    end,
+}
 ```
 
 Using [packer.nvim](https://github.com/wbthomason/packer.nvim):
@@ -92,7 +91,7 @@ below](#custom-picker)).
 automatically, there is no further configuration required.
 
 ### Selecting multiple items with telescope.nvim installed
-`gitignore.nvim` makes use of `telescope.nvim`'s multi-selection keybinds. 
+`gitignore.nvim` makes use of `telescope.nvim`'s multi-selection keybinds.
 This means that by default, you can (de-)select multiple keywords with `<Tab>`,
 and confirm your selection with `<CR>` (Enter).
 In case of multiple selected keywords, the keyword highlighted you press `<CR>`
