@@ -2353,6 +2353,8 @@ CTestTestfile.cmake
 _deps
 ]]
 M["CMake.patch"] = [[
+CMakeUserPresets.json
+
 # External projects
 *-prefix/
 ]]
@@ -4104,6 +4106,10 @@ obj/
 ]]
 M["DotSettings.gitignore"] = [[
 *.DotSettings
+]]
+M["Doxygen.gitignore"] = [[
+html
+latex
 ]]
 M["D.patch"] = [[
 # Test Executables
@@ -10581,6 +10587,9 @@ inc/
 /MANIFEST.bak
 /pm_to_blib
 /*.zip
+
+# Carton
+local/
 ]]
 M["pH7CMS.gitignore"] = [[
 _test/*
@@ -17209,6 +17218,11 @@ testit-reports/
 .generated-tests/
 generated-tests/
 xill.properties
+]]
+M["xmake.gitignore"] = [[
+# Xmake cache
+.xmake/
+build/
 ]]
 M["Xojo.gitignore"] = [[
 # Xojo (formerly REALbasic and Real Studio)
