@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # re-download all the gitignore templates from the toptal repo
-sudo rm -r _repo
+sudo rm -r _repo || true
 git clone https://github.com/toptal/gitignore ./_repo
 
 TEMPLATE_STRING="local M = {}\n"
