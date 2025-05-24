@@ -8921,7 +8921,7 @@ M["macOS.gitignore"] = [[
 .LSOverride
 
 # Icon must end with two 
-Icon
+Icon
 
 # Thumbnails
 ._*
@@ -10436,7 +10436,7 @@ M["OSX.gitignore"] = [[
 .LSOverride
 
 # Icon must end with two 
-Icon
+Icon
 
 # Thumbnails
 ._*
@@ -12340,7 +12340,7 @@ M["ReactNative.macOS.stack"] = [[
 .LSOverride
 
 # Icon must end with two 
-Icon
+Icon
 
 # Thumbnails
 ._*
