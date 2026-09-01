@@ -132,7 +132,7 @@ function M.createGitignoreBuffer(chosen_path, selectionList, prompt_bufnr, overw
     end
     local new_buf = vim.api.nvim_create_buf(true, false)
     vim.api.nvim_buf_set_lines(new_buf, 0, -1, true, allLines)
-    vim.api.nvim_buf_set_option(new_buf, 'filetype', 'gitignore')
+    vim.bo[new_buf].filetype = 'gitignore'
     local ok, _ = pcall(function ()
         vim.api.nvim_buf_set_name(new_buf, gitignoreFile)
     end)
